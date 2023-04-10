@@ -1,14 +1,35 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-contract Counter {
-    uint256 public number;
+contract Deployer {
+    constructor(bytes memory code) {
+        assembly {
+            return(add(code, 0x20), mload(code))
+        }
+    }
+}
 
-    function setNumber(uint256 newNumber) public {
-        number = newNumber;
+contract SmartCounter {
+    address public owner;
+    address public target;
+    bool flag = false;
+
+    constructor(address owner_) {
+        owner = owner_;
     }
 
-    function increment() public {
-        number++;
+    function create(bytes memory code) public {
+        require(code.length <= 24);
+        target = address(new Deployer(code));
+    }
+
+    function A_delegateccall(bytes memory data) public {
+        (bool success, bytes memory returnData) = target.delegatecall(data);
+        require(owner == msg.sender);
+        flag = true;
+    }
+
+    function isSolved() public view returns (bool) {
+        return flag;
     }
 }
